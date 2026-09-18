@@ -1,36 +1,34 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
-import './index.css'
-import { Amplify } from 'aws-amplify'
-
-// Configure AWS Cognito Auth
-Amplify.configure({
-  Auth: {
-    Cognito: {
-      userPoolId: 'eu-north-1_Vrjy2uuu0', // e.g., eu-west-2_xxxxxx
-      userPoolClientId: '55bonh2athid93ejepomjbig3c', // e.g., 1a2b3c4d5e...
-    }
-  }
-});
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
-
+import React from 'react';
+// Import the Authenticator helper and its default styling layout
+import { Authenticator } from '@aws-amplify/ui-react';
+import '@aws-amplify/ui-react/styles.css';
 
 function App() {
   return (
-    <div style={{ padding: '40px', fontFamily: 'sans-serif', textAlign: 'center' }}>
-      <h1>🎯 Darts League Manager</h1>
-      <p>Welcome to your serverless league management application.</p>
-      <div style={{ margin: '20px auto', padding: '20px', border: '1px solid #ccc', maxWidth: '400px', borderRadius: '8px' }}>
-        <h3>🏆 Active Standings</h3>
-        <p>Database connection coming soon ish...</p>
-      </div>
-    </div>
+    // Wrap everything inside the Authenticator provider wrapper
+    <Authenticator>
+      {({ signOut, user }) => (
+        <div style={{ padding: '40px', fontFamily: 'sans-serif', textAlign: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <span>Logged in as: <strong>{user?.username || user?.signInDetails?.loginId}</strong></span>
+            <button 
+              onClick={signOut} 
+              style={{ padding: '8px 16px', background: '#e03131', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+            >
+              Sign Out
+            </button>
+          </div>
+
+          <h1>🎯 Darts League Manager</h1>
+          <p>Welcome to your serverless league management application.</p>
+          
+          <div style={{ margin: '20px auto', padding: '20px', border: '1px solid #ccc', maxWidth: '400px', borderRadius: '8px' }}>
+            <h3>🏆 Active Standings</h3>
+            <p>Database connection coming soon...</p>
+          </div>
+        </div>
+      )}
+    </Authenticator>
   );
 }
 
