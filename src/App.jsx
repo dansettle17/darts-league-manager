@@ -28,6 +28,17 @@ function App() {
 
             <h1>🎯 Darts League Manager</h1>
             
+{/* 🔍 TEMPORARY DIAGNOSTIC BOX */}
+<div style={{ textAlign: 'left', background: '#f1f3f5', padding: '15px', borderRadius: '4px', margin: '20px auto', maxWidth: '600px', fontSize: '12px', overflowX: 'auto' }}>
+  <strong>Debug Info:</strong>
+  <p><strong>Available Tokens:</strong> {user?.tokens ? 'Yes' : 'No'}</p>
+  <p><strong>Groups Found:</strong> {JSON.stringify(user?.tokens?.accessToken?.payload?.['cognito:groups'] || user?.tokens?.idToken?.payload?.['cognito:groups'] || "None found")}</p>
+  <details>
+    <summary>Click to view raw User Object payload</summary>
+    <pre>{JSON.stringify(user, null, 2)}</pre>
+  </details>
+</div>
+
             {/* 3. Conditional Admin Control Panel */}
             {isAdmin ? (
               <div style={{ margin: '20px auto', padding: '20px', border: '2px solid #2f9e44', backgroundColor: '#ebfbee', maxWidth: '500px', borderRadius: '8px' }}>
