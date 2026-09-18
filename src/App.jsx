@@ -7,7 +7,7 @@ function App() {
       <p>Welcome to your serverless league management application.</p>
       <div style={{ margin: '20px auto', padding: '20px', border: '1px solid #ccc', maxWidth: '400px', borderRadius: '8px' }}>
         <h3>🏆 Active Standings</h3>
-        <p>Database connection coming soon...</p>
+        <p>Database connection coming soon ish...</p>
       </div>
     </div>
   );
