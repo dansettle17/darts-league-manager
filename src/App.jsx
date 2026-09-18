@@ -52,18 +52,36 @@ function MainDashboard({ signOut, user }) {
       </div>
       
       {/* Conditional Layout Display */}
-      {isAdmin ? (
-        <div style={{ margin: '20px auto', padding: '20px', border: '2px solid #2f9e44', backgroundColor: '#ebfbee', maxWidth: '500px', borderRadius: '8px' }}>
-          <h3 style={{ color: '#2f9e44', margin: 0 }}>🛡️ Admin Control Panel</h3>
-          <p style={{ fontSize: '14px' }}>Authenticated as League Coordinator.</p>
-          <button style={{ marginRight: '10px', padding: '8px 12px' }}>➕ Create New Season</button>
-          <button style={{ padding: '8px 12px' }}>📝 Enter Match Scores</button>
-        </div>
-      ) : (
-        <div style={{ margin: '20px auto', padding: '20px', border: '1px solid #ecc94b', backgroundColor: '#fefcbf', maxWidth: '500px', borderRadius: '8px' }}>
-          <p style={{ margin: 0, color: '#b7791f' }}>ℹ️ Standard Player View: Contact your league coordinator for admin access.</p>
-        </div>
-      )}
+      {isAdmin && (
+      <div style={{ margin: '20px auto', padding: '20px', border: '2px solid #2f9e44', backgroundColor: '#ebfbee', maxWidth: '500px', borderRadius: '8px', textAlign: 'left' }}>
+        <h3 style={{ color: '#2f9e44', margin: '0 0 15px 0', textAlign: 'center' }}>🛡️ League Structure Manager</h3>
+    
+        <form style={{ display: 'flex', flexDirection: 'column', gap: '10px' }} onSubmit={(e) => e.preventDefault()}>
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold' }}>Select League</label>
+            <select style={{ width: '100%', padding: '6px' }}>
+              <option>Friday Night Darts League</option>
+           </select>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold' }}>New Season Name</label>
+              <input type="text" placeholder="Winter 2026" style={{ width: '90%', padding: '6px' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold' }}>Division (e.g. Div A)</label>
+              <input type="text" placeholder="Division A" style={{ width: '90%', padding: '6px' }} />
+            </div>
+          </div>
+
+      <button type="submit" style={{ padding: '8px', background: '#2f9e44', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}>
+        Save Structure Configuration
+      </button>
+    </form>
+  </div>
+)}
+
 
       <div style={{ margin: '20px auto', padding: '20px', border: '1px solid #ccc', maxWidth: '500px', borderRadius: '8px' }}>
         <h3>🏆 Active Standings</h3>
