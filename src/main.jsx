@@ -1,10 +1,22 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
+import './index.css'
+import { Amplify } from 'aws-amplify'
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
+// Configure AWS Cognito Auth
+Amplify.configure({
+  Auth: {
+    Cognito: {
+      userPoolId: 'eu-north-1_Vrjy2uuu0',      // e.g., eu-west-2_ABC123xyz
+      userPoolClientId: '55bonh2athid93ejepomjbig3c' // e.g., 4k5m6n7p8q9r...
+    }
+  }
+});
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
     <App />
-  </StrictMode>,
+  </React.StrictMode>,
 )
+
