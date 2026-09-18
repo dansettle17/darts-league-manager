@@ -10,7 +10,9 @@ function App() {
       {({ signOut, user }) => (
         <div style={{ padding: '40px', fontFamily: 'sans-serif', textAlign: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <span>Logged in as: <strong>{user?.username || user?.signInDetails?.loginId}</strong></span>
+            <span>
+              Logged in as: <strong>{user?.signInDetails?.loginId || user?.userId}</strong>
+            </span>
             <button 
               onClick={signOut} 
               style={{ padding: '8px 16px', background: '#e03131', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
