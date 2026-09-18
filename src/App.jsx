@@ -6,9 +6,11 @@ function App() {
   return (
     <Authenticator>
       {({ signOut, user }) => {
-        // 1. Extract the Cognito user groups from the access token payload
-        const groups = user?.tokens?.accessToken?.payload?.['cognito:groups'] || [];
-        
+        // 1. Gather groups from all potential token payloads to avoid library version mismatches
+        const accessTokenGroups = user?.tokens?.accessToken?.payload?.['cognito:groups'] || [];
+        const idTokenGroups = user?.tokens?.idToken?.payload?.['cognito:groups'] || [];
+        const groups = [...new Set([...accessTokenGroups, ...idTokenGroups])];
+    
         // 2. Check if the logged-in user belongs to the 'Admins' group
         const isAdmin = groups.includes('Admins');
 
