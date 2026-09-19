@@ -3,27 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
 import { fetchAuthSession } from 'aws-amplify/auth';
-import axios from 'axios';
+import axios from 'react';
+import ManageLeagues from './ManageLeagues'; // Imports your sub-file smoothly
 import '@aws-amplify/ui-react/styles.css';
 
-// 🛑 INSERT YOUR API GATEWAY INVOKE URL HERE
+// 🛑 REPLACE THIS URL WITH YOUR ACTUAL API GATEWAY INVOKE URL
 const API_URL = 'https://a5w71ssf44.execute-api.eu-north-1.amazonaws.com';
 
 function MainDashboard({ signOut, user }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  // Database lists
+  const [currentView, setCurrentView] = useState('HOME');
   const [leaguesList, setLeaguesList] = useState([]);
-
-  // Form State Values
   const [selectedLeagueId, setSelectedLeagueId] = useState('NEW');
   const [leagueName, setLeagueName] = useState('');
   const [seasonName, setSeasonName] = useState('');
   const [divisionName, setDivisionName] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
 
-  // 1. Core Authorization Check
   useEffect(() => {
     async function checkAdminStatus() {
       try {
@@ -40,7 +37,6 @@ function MainDashboard({ signOut, user }) {
     loadExistingLeagues();
   }, [user]);
 
-  // 2. Load Leagues Function
   const loadExistingLeagues = async () => {
     try {
       const response = await axios.get(`${API_URL}/structure`);
@@ -50,11 +46,9 @@ function MainDashboard({ signOut, user }) {
     }
   };
 
-  // 3. Form Input Field Updates on Dropdown Change
   const handleLeagueDropdownChange = (e) => {
     const val = e.target.value;
     setSelectedLeagueId(val);
-    
     if (val === 'NEW') {
       setLeagueName('');
     } else {
@@ -66,25 +60,21 @@ function MainDashboard({ signOut, user }) {
   const handleSaveStructure = async (e) => {
     e.preventDefault();
     setStatusMessage('Syncing data configurations...');
-
     try {
       let targetLeagueId = selectedLeagueId;
       const isNewLeague = targetLeagueId === 'NEW';
-      
       if (isNewLeague) {
         targetLeagueId = `L-${crypto.randomUUID().slice(0, 8)}`;
       }
       const generatedSeasonId = `S-${crypto.randomUUID().slice(0, 8)}`;
       const generatedDivisionId = `D-${crypto.randomUUID().slice(0, 8)}`;
 
-      // Step One: Save or Rename League
       await axios.post(`${API_URL}/structure`, {
         action: isNewLeague ? 'CREATE_LEAGUE' : 'EDIT_LEAGUE',
         leagueId: targetLeagueId,
         leagueName: leagueName
       });
 
-      // Step Two: Conditional Season setup
       if (seasonName) {
         await axios.post(`${API_URL}/structure`, {
           action: 'CREATE_SEASON',
@@ -94,7 +84,6 @@ function MainDashboard({ signOut, user }) {
         });
       }
 
-      // Step Three: Conditional Division setup
       if (divisionName && seasonName) {
         await axios.post(`${API_URL}/structure`, {
           action: 'CREATE_DIVISION',
@@ -110,72 +99,74 @@ function MainDashboard({ signOut, user }) {
       setSeasonName('');
       setDivisionName('');
       setSelectedLeagueId('NEW');
-      
-      // Refresh list options dynamically
       await loadExistingLeagues();
     } catch (error) {
       console.error(error);
-      setStatusMessage(`❌ Error executing sync routines: ${error.message}`);
+      setStatusMessage(`❌ Error: ${error.message}`);
     }
   };
 
-  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading system assets...</div>;
+  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;
 
   return (
-    <div style={{ padding: '40px', fontFamily: 'sans-serif', textAlign: 'center' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <span>🎯 Active Admin: <strong>{user?.signInDetails?.loginId}</strong></span>
-        <button onClick={signOut} style={{ padding: '6px 12px', background: '#e03131', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Sign Out</button>
-      </div>
-
-      <h1>🎯 Darts League Manager</h1>
-      
-      {isAdmin && (
-        <div style={{ margin: '20px auto', padding: '20px', border: '2px solid #2f9e44', backgroundColor: '#ebfbee', maxWidth: '550px', borderRadius: '8px', textAlign: 'left' }}>
-          <h3 style={{ color: '#2f9e44', margin: '0 0 15px 0', textAlign: 'center' }}>🛡️ Structural Admin Dashboard</h3>
-          
-          <form style={{ display: 'flex', flexDirection: 'column', gap: '12px' }} onSubmit={handleSaveStructure}>
-            <div style={{ background: '#fff', padding: '10px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>Target League Selection</label>
-              <select value={selectedLeagueId} onChange={handleLeagueDropdownChange} style={{ width: '100%', padding: '6px', marginBottom: '10px' }}>
-                <option value="NEW">➕ Create a Brand New League</option>
-                {leaguesList.map(league => (
-                  <option key={league.id} value={league.id}>📝 Edit/Append: {league.name} ({league.id})</option>
-                ))}
-              </select>
-              
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>League Name</label>
-              <input type="text" placeholder="e.g. Local Pub Tournament Association" value={leagueName} onChange={(e) => setLeagueName(e.target.value)} style={{ width: '95%', padding: '6px' }} required />
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <div style={{ flex: 1, background: '#fff', padding: '10px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>Add Season (Optional)</label>
-                <input type="text" placeholder="e.g. Autumn 2026" value={seasonName} onChange={(e) => setSeasonName(e.target.value)} style={{ width: '90%', padding: '6px' }} />
-              </div>
-              
-              <div style={{ flex: 1, background: '#fff', padding: '10px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>Add Division (Optional)</label>
-                <input type="text" placeholder="e.g. Division A" value={divisionName} onChange={(e) => setDivisionName(e.target.value)} style={{ width: '90%', padding: '6px' }} disabled={!seasonName} />
-              </div>
-            </div>
-
-            <button type="submit" style={{ padding: '10px', background: '#2f9e44', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-              Save Configurations
-            </button>
-          </form>
-
-          {statusMessage && <p style={{ marginTop: '15px', fontWeight: 'bold', textAlign: 'center', color: '#2b2b2b' }}>{statusMessage}</p>}
+    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', backgroundColor: '#1a1a2e', color: '#fff', borderRadius: '8px', marginBottom: '30px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => setCurrentView('HOME')}>
+          <span style={{ fontSize: '24px' }}>🎯</span>
+          <h2 style={{ margin: 0, fontSize: '20px' }}>Darts League Central</h2>
         </div>
+        <div>
+          <button onClick={signOut} style={{ padding: '6px 12px', background: '#e03131', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Sign Out</button>
+        </div>
+      </header>
+
+      {currentView === 'HOME' && (
+        <div>
+          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+            <h1>League Workspace</h1>
+            <p style={{ color: '#64748b' }}>Select an option below to interact with your darts portal.</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+            <div style={tileStyle}>
+              <h3>View Standings</h3>
+              <button style={tileButtonStyle}>Open Leaderboards</button>
+            </div>
+            <div style={tileStyle}>
+              <h3>Match Results</h3>
+              <button style={tileButtonStyle}>View Game Log</button>
+            </div>
+            {isAdmin && (
+              <div style={{ ...tileStyle, border: '2px solid #2f9e44' }}>
+                <h3>Manage Leagues</h3>
+                <button onClick={() => setCurrentView('MANAGE_LEAGUES')} style={{ ...tileButtonStyle, background: '#2f9e44' }}>Configure Structure →</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {currentView === 'MANAGE_LEAGUES' && (
+        <ManageLeagues 
+          setCurrentView={setCurrentView}
+          handleSaveStructure={handleSaveStructure}
+          selectedLeagueId={selectedLeagueId}
+          handleLeagueDropdownChange={handleLeagueDropdownChange}
+          leaguesList={leaguesList}
+          leagueName={leagueName}
+          setLeagueName={setLeagueName}
+          seasonName={seasonName}
+          setSeasonName={setSeasonName}
+          divisionName={divisionName}
+          setDivisionName={setDivisionName}
+          statusMessage={statusMessage}
+        />
       )}
     </div>
   );
 }
 
-export default function App() {
-  return (
-    <Authenticator>
-      {({ signOut, user }) => <MainDashboard signOut={signOut} user={user} />}
-    </Authenticator>
-  );
-}
+const tileStyle = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '25px', textAlign: 'center' };
+const tileButtonStyle = { width: '100%', padding: '10px', background: '#1a1a2e', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '15px' };
+
+export default function App() { return <Authenticator>{({ signOut, user }) => <MainDashboard signOut={signOut} user={user} />}</Authenticator>; }
