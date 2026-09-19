@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
 import { fetchAuthSession } from 'aws-amplify/auth';
-import axios from 'react';
-import ManageLeagues from './ManageLeagues'; // Imports your sub-file smoothly
+import axios from 'axios'; //  Fixed: Importing cleanly from the correct axios library
+import ManageLeagues from './ManageLeagues'; 
 import '@aws-amplify/ui-react/styles.css';
 
-// 🛑 REPLACE THIS URL WITH YOUR ACTUAL API GATEWAY INVOKE URL
+// 🛑 MAKE SURE THIS ID MATCHES YOUR ACTUAL API GATEWAY EXACTLY
 const API_URL = 'https://a5w71ssf44.execute-api.eu-north-1.amazonaws.com';
 
 function MainDashboard({ signOut, user }) {
@@ -40,9 +40,11 @@ function MainDashboard({ signOut, user }) {
   const loadExistingLeagues = async () => {
     try {
       const response = await axios.get(`${API_URL}/structure`);
-      setLeaguesList(response.data);
+      // Use fallback arrays to make sure we don't crash if database returns empty null rows
+      setLeaguesList(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
-      console.error("Error pulling league listings:", error);
+      console.error("Error pulling league listings from endpoint:", error);
+      setLeaguesList([]); 
     }
   };
 
@@ -102,11 +104,11 @@ function MainDashboard({ signOut, user }) {
       await loadExistingLeagues();
     } catch (error) {
       console.error(error);
-      setStatusMessage(`❌ Error: ${error.message}`);
+      setStatusMessage(`❌ Error: ${error.response?.data?.error || error.message}`);
     }
   };
 
-  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;
+  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading system dashboard...</div>;
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif' }}>
@@ -116,7 +118,7 @@ function MainDashboard({ signOut, user }) {
           <h2 style={{ margin: 0, fontSize: '20px' }}>Darts League Central</h2>
         </div>
         <div>
-          <button onClick={signOut} style={{ padding: '6px 12px', background: '#e03131', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Sign Out</button>
+          <button onClick={signOut} style={{ padding: '6px 12px', background: '#e03131', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Sign Out</button>
         </div>
       </header>
 
@@ -129,15 +131,18 @@ function MainDashboard({ signOut, user }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
             <div style={tileStyle}>
+              <div style={{ fontSize: '32px' }}>🏆</div>
               <h3>View Standings</h3>
               <button style={tileButtonStyle}>Open Leaderboards</button>
             </div>
             <div style={tileStyle}>
+              <div style={{ fontSize: '32px' }}>📝</div>
               <h3>Match Results</h3>
               <button style={tileButtonStyle}>View Game Log</button>
             </div>
             {isAdmin && (
-              <div style={{ ...tileStyle, border: '2px solid #2f9e44' }}>
+              <div style={{ ...tileStyle, border: '2px solid #2f9e44', backgroundColor: '#f8fdf9' }}>
+                <div style={{ fontSize: '32px' }}>🛡️</div>
                 <h3>Manage Leagues</h3>
                 <button onClick={() => setCurrentView('MANAGE_LEAGUES')} style={{ ...tileButtonStyle, background: '#2f9e44' }}>Configure Structure →</button>
               </div>
@@ -166,7 +171,7 @@ function MainDashboard({ signOut, user }) {
   );
 }
 
-const tileStyle = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '25px', textAlign: 'center' };
-const tileButtonStyle = { width: '100%', padding: '10px', background: '#1a1a2e', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '15px' };
+const tileStyle = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '25px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '10px' };
+const tileButtonStyle = { width: '100%', padding: '10px', background: '#1a1a2e', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: 'auto' };
 
 export default function App() { return <Authenticator>{({ signOut, user }) => <MainDashboard signOut={signOut} user={user} />}</Authenticator>; }
