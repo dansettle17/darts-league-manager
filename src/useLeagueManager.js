@@ -16,30 +16,32 @@ export function useLeagueManager(user) {
   const [divisionName, setDivisionName] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
 
+  const loadExistingLeagues = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/structure`);
+      setLeaguesList(Array.isArray(response.data) ? response.data : []);
+    } catch {
+      setLeaguesList([]);
+    }
+  };
+
   useEffect(() => {
-    async function checkAdminStatus() {
+    const initializeDashboard = async () => {
       try {
         const session = await fetchAuthSession();
         const userGroups = session.tokens?.accessToken?.payload?.['cognito:groups'] || [];
         setIsAdmin(userGroups.includes('Admins'));
       } catch (error) {
-        console.error("Authorization check failed", error);
+        console.error('Authorization check failed', error);
       } finally {
         setLoading(false);
       }
-    }
-    checkAdminStatus();
-    loadExistingLeagues();
-  }, [user]);
 
-  const loadExistingLeagues = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/structure`);
-      setLeaguesList(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      setLeaguesList([]);
-    }
-  };
+      await loadExistingLeagues();
+    };
+
+    void initializeDashboard();
+  }, [user]);
 
   const handleDeleteLeague = async (idToWipe) => {
     setStatusMessage('Removing record...');
@@ -63,7 +65,7 @@ export function useLeagueManager(user) {
       await axios.post(`${API_URL}/structure`, {
         action: isEdit ? 'EDIT_LEAGUE' : 'CREATE_LEAGUE',
         leagueId: targetLeagueId,
-        leagueName: leagueName
+        leagueName: leagueName,
       });
 
       if (seasonName) {
@@ -71,7 +73,7 @@ export function useLeagueManager(user) {
           action: 'CREATE_SEASON',
           leagueId: targetLeagueId,
           seasonId: `S-${randomId()}`,
-          seasonName: seasonName
+          seasonName: seasonName,
         });
       }
 
@@ -81,12 +83,14 @@ export function useLeagueManager(user) {
           leagueId: targetLeagueId,
           seasonId: `S-${randomId()}`,
           divisionId: `D-${randomId()}`,
-          divisionName: divisionName
+          divisionName: divisionName,
         });
       }
 
       setStatusMessage('🎯 Structural sync finalized!');
-      setLeagueName(''); setSeasonName(''); setDivisionName('');
+      setLeagueName('');
+      setSeasonName('');
+      setDivisionName('');
       await loadExistingLeagues();
       setManageSubMode('LIST');
     } catch (error) {
@@ -95,9 +99,25 @@ export function useLeagueManager(user) {
   };
 
   return {
-    isAdmin, loading, currentView, setCurrentView, leaguesList, manageSubMode, setManageSubMode,
-    editingLeagueId, setEditingLeagueId, leagueName, setLeagueName, seasonName, setSeasonName,
-    divisionName, setDivisionName, statusMessage, setStatusMessage, handleDeleteLeague, handleSaveStructure,
-    loadExistingLeagues
+    isAdmin,
+    loading,
+    currentView,
+    setCurrentView,
+    leaguesList,
+    manageSubMode,
+    setManageSubMode,
+    editingLeagueId,
+    setEditingLeagueId,
+    leagueName,
+    setLeagueName,
+    seasonName,
+    setSeasonName,
+    divisionName,
+    setDivisionName,
+    statusMessage,
+    setStatusMessage,
+    handleDeleteLeague,
+    handleSaveStructure,
+    loadExistingLeagues,
   };
 }
