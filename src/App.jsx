@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
 import { fetchAuthSession } from 'aws-amplify/auth';
-import axios from 'axios'; //  Fixed: Importing cleanly from the correct axios library
+import axios from 'axios'; 
 import ManageLeagues from './ManageLeagues'; 
 import '@aws-amplify/ui-react/styles.css';
 
-// 🛑 MAKE SURE THIS ID MATCHES YOUR ACTUAL API GATEWAY EXACTLY
+// 🛑 REPLACE THIS URL WITH YOUR ACTUAL API GATEWAY INVOKE URL
 const API_URL = 'https://a5w71ssf44.execute-api.eu-north-1.amazonaws.com';
 
 function MainDashboard({ signOut, user }) {
@@ -15,7 +15,8 @@ function MainDashboard({ signOut, user }) {
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState('HOME');
   const [leaguesList, setLeaguesList] = useState([]);
-  const [selectedLeagueId, setSelectedLeagueId] = useState('NEW');
+  
+  // Working Forms Input States
   const [leagueName, setLeagueName] = useState('');
   const [seasonName, setSeasonName] = useState('');
   const [divisionName, setDivisionName] = useState('');
@@ -28,7 +29,7 @@ function MainDashboard({ signOut, user }) {
         const userGroups = session.tokens?.accessToken?.payload?.['cognito:groups'] || [];
         setIsAdmin(userGroups.includes('Admins'));
       } catch (error) {
-        console.error("Authorization check failed:", error);
+        console.error("Authorization access error:", error);
       } finally {
         setLoading(false);
       }
@@ -40,39 +41,35 @@ function MainDashboard({ signOut, user }) {
   const loadExistingLeagues = async () => {
     try {
       const response = await axios.get(`${API_URL}/structure`);
-      // Use fallback arrays to make sure we don't crash if database returns empty null rows
       setLeaguesList(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
-      console.error("Error pulling league listings from endpoint:", error);
-      setLeaguesList([]); 
+      console.error("Error reading tables:", error);
+      setLeaguesList([]);
     }
   };
 
-  const handleLeagueDropdownChange = (e) => {
-    const val = e.target.value;
-    setSelectedLeagueId(val);
-    if (val === 'NEW') {
-      setLeagueName('');
-    } else {
-      const existing = leaguesList.find(l => l.id === val);
-      setLeagueName(existing ? existing.name : '');
-    }
-  };
-
-  const handleSaveStructure = async (e) => {
-    e.preventDefault();
-    setStatusMessage('Syncing data configurations...');
+  const handleDeleteLeague = async (idToWipe) => {
+    setStatusMessage('Removing record from database...');
     try {
-      let targetLeagueId = selectedLeagueId;
-      const isNewLeague = targetLeagueId === 'NEW';
-      if (isNewLeague) {
-        targetLeagueId = `L-${crypto.randomUUID().slice(0, 8)}`;
-      }
+      await axios.delete(`${API_URL}/structure`, { params: { leagueId: idToWipe } });
+      setStatusMessage('🗑️ League record successfully erased.');
+      await loadExistingLeagues();
+    } catch (error) {
+      console.error(error);
+      setStatusMessage(`❌ Wipe failure: ${error.message}`);
+    }
+  };
+
+  const handleSaveStructure = async (existingId) => {
+    setStatusMessage('Syncing configurations...');
+    try {
+      const isEdit = !!existingId;
+      const targetLeagueId = isEdit ? existingId : `L-${crypto.randomUUID().slice(0, 8)}`;
       const generatedSeasonId = `S-${crypto.randomUUID().slice(0, 8)}`;
       const generatedDivisionId = `D-${crypto.randomUUID().slice(0, 8)}`;
 
       await axios.post(`${API_URL}/structure`, {
-        action: isNewLeague ? 'CREATE_LEAGUE' : 'EDIT_LEAGUE',
+        action: isEdit ? 'EDIT_LEAGUE' : 'CREATE_LEAGUE',
         leagueId: targetLeagueId,
         leagueName: leagueName
       });
@@ -96,19 +93,18 @@ function MainDashboard({ signOut, user }) {
         });
       }
 
-      setStatusMessage(`🎯 Process Complete! Sync finalized.`);
+      setStatusMessage(`🎯 Structural sync finalized for League ID: ${targetLeagueId}`);
       setLeagueName('');
       setSeasonName('');
       setDivisionName('');
-      setSelectedLeagueId('NEW');
       await loadExistingLeagues();
     } catch (error) {
       console.error(error);
-      setStatusMessage(`❌ Error: ${error.response?.data?.error || error.message}`);
+      setStatusMessage(`❌ Operational failure: ${error.message}`);
     }
   };
 
-  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading system dashboard...</div>;
+  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Synchronizing credentials...</div>;
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif' }}>
@@ -154,10 +150,9 @@ function MainDashboard({ signOut, user }) {
       {currentView === 'MANAGE_LEAGUES' && (
         <ManageLeagues 
           setCurrentView={setCurrentView}
-          handleSaveStructure={handleSaveStructure}
-          selectedLeagueId={selectedLeagueId}
-          handleLeagueDropdownChange={handleLeagueDropdownChange}
           leaguesList={leaguesList}
+          handleSaveStructure={handleSaveStructure}
+          handleDeleteLeague={handleDeleteLeague}
           leagueName={leagueName}
           setLeagueName={setLeagueName}
           seasonName={seasonName}
@@ -165,6 +160,7 @@ function MainDashboard({ signOut, user }) {
           divisionName={divisionName}
           setDivisionName={setDivisionName}
           statusMessage={statusMessage}
+          setStatusMessage={setStatusMessage}
         />
       )}
     </div>
