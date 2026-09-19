@@ -4,15 +4,16 @@ import { fetchAuthSession } from 'aws-amplify/auth';
 import axios from 'axios';
 import '@aws-amplify/ui-react/styles.css';
 
-// 🛑 REPLACE THIS URL WITH YOUR ACTUAL API GATEWAY INVOKE URL
+// 🛑 INSERT YOUR API GATEWAY INVOKE URL HERE
 const API_URL = 'https://a5w71ssf44.execute-api.eu-north-1.amazonaws.com';
 
 function MainDashboard({ signOut, user }) {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Form State Values
+  // Structural Form State Layouts
+  const [leagueId, setLeagueId] = useState('');
+  const [leagueName, setLeagueName] = useState('');
   const [seasonName, setSeasonName] = useState('');
   const [divisionName, setDivisionName] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
@@ -22,10 +23,9 @@ function MainDashboard({ signOut, user }) {
       try {
         const session = await fetchAuthSession();
         const userGroups = session.tokens?.accessToken?.payload?.['cognito:groups'] || [];
-        setGroups(userGroups);
         setIsAdmin(userGroups.includes('Admins'));
       } catch (error) {
-        console.error("Error fetching Cognito group session:", error);
+        console.error("Error verification error:", error);
       } finally {
         setLoading(false);
       }
@@ -33,121 +33,107 @@ function MainDashboard({ signOut, user }) {
     checkAdminStatus();
   }, [user]);
 
-  // Form Submission Handler
   const handleSaveStructure = async (e) => {
     e.preventDefault();
-    setStatusMessage('Saving to cloud database...');
+    setStatusMessage('Syncing with AWS database servers...');
 
     try {
-      // Hardcoded baseline league ID for initial setup simplicity
-      const leagueId = 'L-001'; 
-      const generatedSeasonId = crypto.randomUUID().slice(0, 8);
-      const generatedDivisionId = crypto.randomUUID().slice(0, 8);
+      // 1. Resolve or generate target unique IDs
+      let targetLeagueId = leagueId.trim();
+      const isNewLeague = !targetLeagueId;
+      
+      if (isNewLeague) {
+        targetLeagueId = `L-${crypto.randomUUID().slice(0, 8)}`;
+      }
+      const generatedSeasonId = `S-${crypto.randomUUID().slice(0, 8)}`;
+      const generatedDivisionId = `D-${crypto.randomUUID().slice(0, 8)}`;
 
-      // 1. First, create the Season record
+      // 2. Step One: Create or edit the master League entry
+      if (leagueName) {
+        await axios.post(`${API_URL}/structure`, {
+          action: isNewLeague ? 'CREATE_LEAGUE' : 'EDIT_LEAGUE',
+          leagueId: targetLeagueId,
+          leagueName: leagueName
+        });
+      }
+
+      // 3. Step Two: If fields are filled, link a new Season configuration block
       if (seasonName) {
         await axios.post(`${API_URL}/structure`, {
           action: 'CREATE_SEASON',
-          leagueId: leagueId,
+          leagueId: targetLeagueId,
           seasonId: generatedSeasonId,
           seasonName: seasonName
         });
       }
 
-      // 2. Second, create the Division record tied to that Season
-      if (divisionName) {
+      // 4. Step Three: Link a new Division block line
+      if (divisionName && seasonName) {
         await axios.post(`${API_URL}/structure`, {
           action: 'CREATE_DIVISION',
-          leagueId: leagueId,
+          leagueId: targetLeagueId,
           seasonId: generatedSeasonId,
           divisionId: generatedDivisionId,
           divisionName: divisionName
         });
       }
 
-      setStatusMessage('🎯 Configuration saved successfully to DynamoDB!');
+      setStatusMessage(`🎯 Successfully processed! League ID: ${targetLeagueId}`);
+      // Wipe input nodes clean
+      setLeagueId('');
+      setLeagueName('');
       setSeasonName('');
       setDivisionName('');
     } catch (error) {
-      console.error('API Error:', error);
-      setStatusMessage(`❌ Error saving structure: ${error.response?.data?.error || error.message}`);
+      console.error(error);
+      setStatusMessage(`❌ Error: ${error.response?.data?.error || error.message}`);
     }
   };
 
-  if (loading) {
-    return <div style={{ padding: '40px', textAlign: 'center' }}>Verifying security permissions...</div>;
-  }
+  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Verifying permissions...</div>;
 
   return (
     <div style={{ padding: '40px', fontFamily: 'sans-serif', textAlign: 'center' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <span>🎯 Welcome, <strong>{user?.signInDetails?.loginId || 'Player'}</strong></span>
-        <button 
-          onClick={signOut} 
-          style={{ padding: '8px 16px', background: '#e03131', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-        >
-          Sign Out
-        </button>
+        <span>🎯 Welcome Admin: <strong>{user?.signInDetails?.loginId}</strong></span>
+        <button onClick={signOut} style={{ padding: '6px 12px', background: '#e03131', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Sign Out</button>
       </div>
 
       <h1>🎯 Darts League Manager</h1>
-
-      <div style={{ background: '#f1f3f5', padding: '10px', borderRadius: '4px', margin: '15px auto', maxWidth: '500px', fontSize: '13px' }}>
-        <strong>Cognito Security Groups:</strong> {groups.length > 0 ? JSON.stringify(groups) : 'None Detected'}
-      </div>
       
       {isAdmin && (
-        <div style={{ margin: '20px auto', padding: '20px', border: '2px solid #2f9e44', backgroundColor: '#ebfbee', maxWidth: '500px', borderRadius: '8px', textAlign: 'left' }}>
-          <h3 style={{ color: '#2f9e44', margin: '0 0 15px 0', textAlign: 'center' }}>🛡️ League Structure Manager</h3>
+        <div style={{ margin: '20px auto', padding: '20px', border: '2px solid #2f9e44', backgroundColor: '#ebfbee', maxWidth: '550px', borderRadius: '8px', textAlign: 'left' }}>
+          <h3 style={{ color: '#2f9e44', margin: '0 0 15px 0', textAlign: 'center' }}>🛡️ Master Structure Admin</h3>
           
-          <form style={{ display: 'flex', flexDirection: 'column', gap: '10px' }} onSubmit={handleSaveStructure}>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold' }}>Default Tracking League</label>
-              <select style={{ width: '100%', padding: '6px' }} disabled>
-                <option>Friday Night Darts League (L-001)</option>
-              </select>
+          <form style={{ display: 'flex', flexDirection: 'column', gap: '12px' }} onSubmit={handleSaveStructure}>
+            <div style={{ background: '#fff', padding: '10px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>League ID (Leave empty to create a NEW league)</label>
+              <input type="text" placeholder="e.g. L-abc12345 (Paste here to edit name or append sub-structures)" value={leagueId} onChange={(e) => setLeagueId(e.target.value)} style={{ width: '95%', padding: '6px' }} />
+              
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginTop: '10px', marginBottom: '4px' }}>League Name</label>
+              <input type="text" placeholder="e.g. Monday Night Pub League" value={leagueName} onChange={(e) => setLeagueName(e.target.value)} style={{ width: '95%', padding: '6px' }} required />
             </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold' }}>New Season Name</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Winter 2026" 
-                  value={seasonName}
-                  onChange={(e) => setSeasonName(e.target.value)}
-                  style={{ width: '90%', padding: '6px' }} 
-                  required
-                />
+              <div style={{ flex: 1, background: '#fff', padding: '10px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>Add Season (Optional)</label>
+                <input type="text" placeholder="e.g. Spring 2026" value={seasonName} onChange={(e) => setSeasonName(e.target.value)} style={{ width: '90%', padding: '6px' }} />
               </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold' }}>Division Name</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Division A" 
-                  value={divisionName}
-                  onChange={(e) => setDivisionName(e.target.value)}
-                  style={{ width: '90%', padding: '6px' }} 
-                  required
-                />
+              
+              <div style={{ flex: 1, background: '#fff', padding: '10px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>Add Division (Optional)</label>
+                <input type="text" placeholder="e.g. Division 1" value={divisionName} onChange={(e) => setDivisionName(e.target.value)} style={{ width: '90%', padding: '6px' }} disabled={!seasonName} />
               </div>
             </div>
 
-            <button type="submit" style={{ padding: '8px', background: '#2f9e44', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}>
-              Save Structure Configuration
+            <button type="submit" style={{ padding: '10px', background: '#2f9e44', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+              Execute Structural Database Entry
             </button>
           </form>
 
-          {statusMessage && (
-            <p style={{ marginTop: '15px', fontWeight: 'bold', textAlign: 'center', fontSize: '14px' }}>{statusMessage}</p>
-          )}
+          {statusMessage && <p style={{ marginTop: '15px', fontWeight: 'bold', textAlign: 'center', color: '#2b2b2b' }}>{statusMessage}</p>}
         </div>
       )}
-
-      <div style={{ margin: '20px auto', padding: '20px', border: '1px solid #ccc', maxWidth: '500px', borderRadius: '8px' }}>
-        <h3>🏆 Active Standings</h3>
-        <p>Database connection coming soon...</p>
-      </div>
     </div>
   );
 }
