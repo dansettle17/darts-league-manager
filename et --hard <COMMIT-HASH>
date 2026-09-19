@@ -1,0 +1,24 @@
+[33m44b820f[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix final module axios call imports to resolve deployment blockage
+[33me4b1af7[m Replace browser global crypto with compilation-safe string id routine
+[33me1376ae[m Implement advanced list-based index panels with scroll views and delete calls
+[33m3599566[m Implement advanced list-based index panels with scroll views and delete calls
+[33m2022196[m Fix syntax import statement error for axios framework calls
+[33me7f30b3[m Split main dashboard context into clean component architecture modules
+[33m161e169[m Implement dynamic dropdown mapping logic querying master league list via HTTP GET
+[33me75c863[m Enhance Admin toolsets to facilitate dynamically scaling League metadata creations
+[33me6aede3[m Hook up structural layout form to AWS API Gateway endpoint
+[33m59cc7d9[m Add administrative structural setup forms to frontend
+[33m837c92e[m Remove redundant workflow files to let Amplify handle builds
+[33m5eb101e[m Add role-based admin panel visibility checking Cognito groups
+[33m8c3f06e[m Add role-based admin panel visibility checking Cognito groups
+[33mf4e4fc6[m Add role-based admin panel visibility checking Cognito groups
+[33meef4fc8[m Add role-based admin panel visibility checking Cognito groups
+[33m5429e5f[m Update login banner to display user email instead of UUID
+[33m90abb62[m Fix required sign up user attributes configuration
+[33mb42a238[m Fix required sign up user attributes configuration
+[33m3727ce2[m Fix Cognito credentials configuration
+[33ma791cf0[m Integrate Cognito authentication screens into frontend
+[33m3f09966[m Update including cognito stuff
+[33m0125f9c[m Update homepage layout for darts league app - again
+[33mb32fde7[m Update homepage layout for darts league app
+[33m20dcd41[m Initial commit: React frontend scaffold
